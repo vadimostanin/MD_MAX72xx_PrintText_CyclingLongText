@@ -9,6 +9,9 @@
 #include <SPI.h>
 #include "font_ukr.h"
 #include <EEPROM.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <Pinger.h>
 
 #define PRINT_ENABLE
 #ifdef PRINT_ENABLE
@@ -18,17 +21,26 @@
   #define PRINT(s, v)
   #define PRINT3(s, v, j)
 #endif
+const char* ssid     = "laptop_ext";
+const char* password = "iZ27St#R ";
+const char* mqtt_server = "192.168.1.79";
+const int mqtt_port = 1883; // Порт для подключения к серверу MQTT
+const char *mqtt_user = "mqtt_user";
+const char *mqtt_pass = "q1w2e3r4";
 
 uint32_t delay_text_movement_millis_last = 0;
 uint32_t delay_text_movement = 80;
-
+uint32_t delay_wifi_connection_first_millis_last = 0;
+WiFiClient wclient;
+void mqtt_callback(char* topic, byte* payload, unsigned int length);
+PubSubClient client(mqtt_server, mqtt_port, mqtt_callback, wclient);
+Pinger pinger;
 // Define the number of devices we have in the chain and the hardware interface
 // NOTE: These pin numbers will probably not work with your hardware and may
 // need to be adapted
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_REAL_DEVICES (4)
-#define MAX_VIRTUAL_DEVICES (100)
-#define MAX_DEVICES (MAX_REAL_DEVICES+MAX_VIRTUAL_DEVICES)
+#define MAX_DEVICES (MAX_REAL_DEVICES+67)
 
 #define CLK_PIN   SCK  // or SCK
 #define DATA_PIN  MOSI  // or MOSI
@@ -45,14 +57,141 @@ MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 // Global message buffers shared by Serial and Scrolling functions
 #define BUF_SIZE  (2000)
 #define _(x) ((uint16_t)x)
-uint16_t message[BUF_SIZE] = {_('V'), _('E'), _('R'), _('Y'), _(' '), _('L'), _('O'), _('N'), _('G'), _(' '), _('T'), _('E'), _('X'), _('T'), _(','), _(' '),
-_('V'), _('E'), _('R'), _('Y'), _(' '), _('L'), _('O'), _('N'), _('G'), _(' '), _('T'), _('E'), _('X'), _('T'), _(','), _(' '),
-_('V'), _('E'), _('R'), _('Y'), _(' '), _('L'), _('O'), _('N'), _('G'), _(' '), _('T'), _('E'), _('X'), _('T'), _(','), _(' '),
-_('V'), _('E'), _('R'), _('Y'), _(' '), _('L'), _('O'), _('N'), _('G'), _(' '), _('T'), _('E'), _('X'), _('T'), _(','), _(' '),
-_('V'), _('E'), _('R'), _('Y'), _(' '), _('L'), _('O'), _('N'), _('G'), _(' '), _('T'), _('E'), _('X'), _('T'), _(','), _(' '),
-_('V'), _('E'), _('R'), _('Y'), _(' '), _('L'), _('O'), _('N'), _('G'), _(' '), _('T'), _('E'), _('X'), _('T')
-};
+// uint16_t message[BUF_SIZE] = {(uint16_t)'H',(uint16_t)'e', (uint16_t)'l', (uint16_t)'l', (uint16_t)'o', (uint16_t)'!', 0};//
+uint16_t message[BUF_SIZE] = {
+  (uint16_t)'А',(uint16_t)'A',
+  (uint16_t)'В',(uint16_t)'B',
+  (uint16_t)'Е',(uint16_t)'E',
+  (uint16_t)'И',(uint16_t)'N',
+  (uint16_t)'К',(uint16_t)'K',
+  (uint16_t)'М',(uint16_t)'M',
+  (uint16_t)'Н',(uint16_t)'H',
+  (uint16_t)'О',(uint16_t)'O',
+  (uint16_t)'Р',(uint16_t)'P',
+  (uint16_t)'С',(uint16_t)'C',
+  (uint16_t)'Т',(uint16_t)'T',
+  (uint16_t)'Х',(uint16_t)'X',
+  (uint16_t)'Я',(uint16_t)'R',
+  0};//
+// uint16_t message[BUF_SIZE] = {
+// _('М'), _('А'), _('М'), _('О'), _('-'), _('І'), _('Р'), _('А'), _(','), _(' '), 
+// _('Т'), _('А'), _('Т'), _('О'), _('-'), _('В'), _('А'), _('Д'), _('И'), _('М'), _(','), _(' '), 
+// _('Є'), _('Г'), _('О'), _('Р'), _('-'), _('С'), _('О'), _('Н'), _('І'), _('К'), _(','), _(' '), 
+// _('С'), _('У'), _('П'), _('Е'), _('Р'), _('-'), _('С'), _('О'), _('Ф'), _('І'), _('Я'), 0};//
+//uint16_t message[BUF_SIZE] = {0};//МАМО-ІРА, ТАТО-ВАДИМ, ЄГОР-СОНІК, СУПЕР-СОФІЯ
+// uint16_t message[BUF_SIZE] = {
+// _('М'), _('А'), _('М'), _('О'), _('-'), _('І'), _('Р'), _('А'), _(' '),
+// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _('А'), _(','),
+// _('Т'), _('А'), _('Т'), _('О'), _('-'), _('В'), _('А'), _('Д'), _('И'), _('М'), _(' '), 
+// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _(','),
+// _('Є'), _('Г'), _('О'), _('Р'), _('-'), _('С'), _('О'), _('Н'), _('І'), _('К'), _(' '),
+// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _(','),
+// _('С'), _('У'), _('П'), _('Е'), _('Р'), _('-'), _('С'), _('О'), _('Ф'), _('І'), _('Я'), _(' '),
+// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _('А'), 0};//
+// МАМО-ІРА ОСТАНІНА, ТАТО-ВАДИМ ОСТАНІН, ЄГОР-СОНІК ОСТАНІН, СУПЕР-СОФІЯ ОСТАНІНА
+// МАМО-ІРА ОСТАНІНА, ТАТО-ВАДИМ ОСТАНІН, ЄГОР-СОНІК ОСТАНІН, СУПЕР-СОФІЯ ОСТАНІНА, КИЇВ, ВУЛИЦЯ ДЕМІЇВСЬКА 16
 bool newMessageAvailable = true;
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length)
+{
+  char tempPayload[1024] = {0};
+  PRINT(topic, ""); // выводим в сериал порт название топика
+  PRINT(" => length=", length); // выводим в сериал порт значение полученных данных
+
+  memcpy(tempPayload, payload, length);
+
+  if(String(topic) == "homeassistant/light/MAX7219/delay/set") // проверяем из нужного ли нам топика пришли данные
+  {
+    const int delay = atoi(tempPayload); // преобразуем полученные данные в тип integer
+    PRINT("delay=", delay);
+    delay_text_movement = delay;
+  }
+  else if(String(topic) == "homeassistant/light/MAX7219/delay/increase") // проверяем из нужного ли нам топика пришли данные
+  {
+    const int delay_delta = atoi(tempPayload); // преобразуем полученные данные в тип integer
+    PRINT("delay_delta=", delay_delta);
+    delay_text_movement -= delay_delta;
+  }
+  else if(String(topic) == "homeassistant/light/MAX7219/delay/decrease") // проверяем из нужного ли нам топика пришли данные
+  {
+    const int delay_delta = atoi(tempPayload); // преобразуем полученные данные в тип integer
+    PRINT("delay_delta=", delay_delta);
+    delay_text_movement += delay_delta;
+  }
+  else if(String(topic) == "homeassistant/light/MAX7219/text/set") // проверяем из нужного ли нам топика пришли данные
+  {
+    uint16_t putIndex = 0;
+    memset(message, 0, sizeof(message));
+    for(uint16_t char_i = 0 ; char_i < length ; ++char_i)
+    {
+      uint8_t serial_read = (uint8_t)tempPayload[char_i];
+      message[putIndex] = serial_read;
+      if(serial_read == 208)
+      {
+        message[putIndex] <<= 8;
+        ++char_i;
+        serial_read = (uint8_t)tempPayload[char_i];
+        message[putIndex] |= serial_read;
+        ++putIndex;
+      }
+      else if ((message[putIndex] == '\n') || (putIndex >= BUF_SIZE-3))  // end of message character or full buffer
+      {
+        // put in a message separator and end the string
+        message[putIndex] = '\0';
+        // restart the index for next filling spree and flag we have a message waiting
+        putIndex = 0;
+      }
+      else
+      {
+        // Just save the next char in next location
+        message[putIndex++];
+      }
+    }
+    newMessageAvailable = true;
+  }
+}
+
+void handle_wifi_connection_first_check()
+{
+  static bool message_has_ip = false;
+  char ip_str[16] = {0};
+  PRINT3(__func__, ":", __LINE__);
+  int start = millis();
+  if(WiFi.status() != WL_CONNECTED)
+  {
+    PRINT(".", "");
+  }
+  else if(false == message_has_ip)
+  {
+    PRINT("WiFi connected: IP address: ", WiFi.localIP());
+    const uint message_len = get_message_length();
+    IPAddress ip = WiFi.localIP();
+    sprintf(ip_str, ", IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    const uint ip_len = strlen(ip_str);
+    uint16_t *pMessage = message + message_len - 1;
+    PRINT("message_len=", message_len);
+    // *pMessage = ',';
+    // *(++pMessage) = ' ';
+    // for(uint char_i = 0; char_i < ip_len ; ++char_i)
+    // {
+    //   uint16_t wide_char = ip_str[char_i];
+    //   *(++pMessage) = wide_char;
+    // }
+    PRINT("get_message_length()=", get_message_length());
+    message_has_ip = true;
+
+    // for(uint char_i = 0 ; message[char_i] != 0 ; ++char_i)
+    // {
+    //   PRINT("char_i=", char_i);
+    //   PRINT("char=", message[char_i]);
+    // }
+
+
+    // newMessageAvailable = true;
+  }
+  int end = millis();
+  PRINT("end - start=", end - start);
+}
 
 bool getUkranianChar(uint16_t ch, uint8_t chars[COL_SIZE], uint8_t *len)
 {
@@ -113,6 +252,53 @@ void readSerial(bool &textChanged, uint16_t &newMessageSize)
       textChanged = true;
     }
   }
+}
+
+void eeprom_message_read()
+{
+  unsigned char eeprom_value = 0;
+  uint16_t message_bytes_size = 0;
+
+  EEPROM.begin(2);
+
+  EEPROM.get(0, eeprom_value);
+  message_bytes_size = eeprom_value << 8;
+  EEPROM.get(1, eeprom_value);
+  message_bytes_size |= eeprom_value;
+  if(0xffff != message_bytes_size)
+  {
+    memset(message, 0, sizeof(message));
+
+    EEPROM.begin(2 + message_bytes_size);
+
+    const uint16_t message_utf8_size = message_bytes_size / sizeof(message[0]);
+    for(int message_i = 0 ; message_i < message_utf8_size ; ++message_i)
+    {
+      EEPROM.get(message_i*2 + 2, eeprom_value);
+      message[message_i] = eeprom_value << 8;
+      EEPROM.get(message_i*2 + 2 + 1, eeprom_value);
+      message[message_i] |= eeprom_value;
+    }
+    newMessageAvailable = true;
+  }
+}
+
+void eeprom_message_write(const uint16_t *str, uint16_t newMessageSize)
+{
+  const unsigned short message_utf8_size = newMessageSize;
+  const unsigned short message_bytes_size = message_utf8_size * sizeof(message[0]);
+  unsigned char eeprom_value = 0; 
+  EEPROM.begin(2 + message_bytes_size);
+  EEPROM.put(0, message_bytes_size>>8);
+  EEPROM.put(1, message_bytes_size);
+  for(int message_i = 0 ; message_i < message_utf8_size ; ++message_i)
+  {
+    eeprom_value = message[message_i] >> 8;
+    EEPROM.put(message_i*2 + 2, eeprom_value);
+    eeprom_value = message[message_i];
+    EEPROM.put(message_i*2 + 2 + 1, eeprom_value);
+  }
+  EEPROM.commit();
 }
 
 void printText(uint8_t modStart, uint8_t modEnd, uint16_t *pMsg)
@@ -183,120 +369,38 @@ void printText(uint8_t modStart, uint8_t modEnd, uint16_t *pMsg)
   } while (col >= (modStart * COL_SIZE));
 }
 
-void eeprom_message_read()
-{
-  unsigned char eeprom_value = 0;
-  uint16_t message_bytes_size = 0;
-
-  EEPROM.begin(2);
-
-  EEPROM.get(0, eeprom_value);
-  message_bytes_size = eeprom_value << 8;
-  EEPROM.get(1, eeprom_value);
-  message_bytes_size |= eeprom_value;
-  if(0xffff != message_bytes_size)
-  {
-    memset(message, 0, sizeof(message));
-
-    EEPROM.begin(2 + message_bytes_size);
-
-    const uint16_t message_utf8_size = message_bytes_size / sizeof(message[0]);
-    for(int message_i = 0 ; message_i < message_utf8_size ; ++message_i)
-    {
-      EEPROM.get(message_i*2 + 2, eeprom_value);
-      message[message_i] = eeprom_value << 8;
-      EEPROM.get(message_i*2 + 2 + 1, eeprom_value);
-      message[message_i] |= eeprom_value;
-    }
-    newMessageAvailable = true;
-  }
-}
-
-void eeprom_message_write(const uint16_t *str, uint16_t newMessageSize)
-{
-  const unsigned short message_utf8_size = newMessageSize;
-  const unsigned short message_bytes_size = message_utf8_size * sizeof(message[0]);
-  unsigned char eeprom_value = 0; 
-  EEPROM.begin(2 + message_bytes_size);
-  EEPROM.put(0, message_bytes_size>>8);
-  EEPROM.put(1, message_bytes_size);
-  for(int message_i = 0 ; message_i < message_utf8_size ; ++message_i)
-  {
-    eeprom_value = message[message_i] >> 8;
-    EEPROM.put(message_i*2 + 2, eeprom_value);
-    eeprom_value = message[message_i];
-    EEPROM.put(message_i*2 + 2 + 1, eeprom_value);
-  }
-  EEPROM.commit();
-}
-
 void handle_text_movement()
 {
   PRINT3(__func__,":", __LINE__);
   // Shift over and insert the new column
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
   PRINT3(__func__,":", __LINE__);
-  mx.transform(MD_MAX72XX::TSL);
+  mx.transform(MD_MAX72XX::TSR);
   PRINT3(__func__,":", __LINE__);
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
   PRINT3(__func__,":", __LINE__);
   yield();
-  bool empty_panel = true;
-  for(uint col_i = 0 ; col_i < COL_SIZE * MAX_REAL_DEVICES ; ++col_i)
-  {
-    if(0 != mx.getColumn(col_i / COL_SIZE, col_i % COL_SIZE))
-    {
-      empty_panel = false;
-      break;
-    }
-  }
-  if(empty_panel)
-  {
-    PRINT("Panel is empty", "");
-    mx.control(0, MAX_DEVICES, MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-    for(int column_i = 0 ; column_i < COL_SIZE * (MAX_DEVICES); ++column_i)
-    {
-      if((column_i % COL_SIZE * 200) == 0)
-      {
-        yield();
-      }
-      mx.transform(MD_MAX72XX::TSL);
-      for(uint col_i = 0 ; col_i < COL_SIZE * MAX_REAL_DEVICES ; ++col_i)
-      {
-        if(0 != mx.getColumn(col_i / COL_SIZE, col_i % COL_SIZE))
-        {
-          empty_panel = false;
-          break;
-        }
-      }
-      if(!empty_panel)
-      {
-        mx.transform(MD_MAX72XX::TSR);
-        break;
-      }
-    }
-    mx.control(0, MAX_DEVICES, MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-    PRINT("Panel is not empty", "");
-  }
 }
 
 void handle_add_new_text()
 {
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-    mx.control(0, MAX_DEVICES-1, MD_MAX72XX::WRAPAROUND, MD_MAX72XX::OFF);
-    
-    printText(0, MAX_DEVICES-1, message);
-    yield();
-    mx.control(0, MAX_DEVICES-1, MD_MAX72XX::WRAPAROUND, MD_MAX72XX::ON);
-    yield();
-    for(int column_i = 0 ; column_i < COL_SIZE * (MAX_DEVICES); ++column_i)
+  mx.control(0, MAX_DEVICES-1, MD_MAX72XX::WRAPAROUND, MD_MAX72XX::OFF);
+  
+  printText(0, MAX_DEVICES-1, message);
+  yield();
+  mx.control(0, MAX_DEVICES-1, MD_MAX72XX::WRAPAROUND, MD_MAX72XX::ON);
+  yield();
+  for(int column_i = 0 ; column_i < COL_SIZE * (MAX_REAL_DEVICES); ++column_i)
+  {
+    if((column_i % COL_SIZE * 200) == 0)
     {
-      if((column_i % COL_SIZE * 200) == 0)
-      {
-        yield();
-      }
-      mx.transform(MD_MAX72XX::TSR);
+      yield();
     }
+    mx.transform(MD_MAX72XX::TSR);
+  }
+  mx.transform(MD_MAX72XX::TFUD);
+  mx.transform(MD_MAX72XX::TFLR);
   yield();
   mx.control(0, MAX_DEVICES, MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
 }
@@ -318,11 +422,46 @@ void setup()
   Serial.begin(74880);
   mx.begin();
 
-  // eeprom_message_read();
+  eeprom_message_read();
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::INTENSITY, 2);
   mx.control(0, 0, MD_MAX72XX::INTENSITY, 2 + 3);
 
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  pinger.OnReceive([](const PingerResponse& response)
+  {
+    if (response.ReceivedResponse)
+    {
+      if (!client.connected())
+      {
+        PRINT("Connecting to MQTT server", "");
+        if (client.connect("homeassistant/light/MAX7219", mqtt_user, mqtt_pass))
+        {
+          PRINT("Connected to MQTT server", "");
+          client.subscribe("homeassistant/light/MAX7219/delay/set");
+          client.subscribe("homeassistant/light/MAX7219/delay/increase");
+          client.subscribe("homeassistant/light/MAX7219/delay/decrease");
+          client.subscribe("homeassistant/light/MAX7219/text/set");
+        } else {
+          PRINT("Could not connect to MQTT server", "");
+        }
+      }
+    }
+    else
+    {
+      PRINT("Request timed out.", "");
+    }
+
+    // Return true to continue the ping sequence.
+    // If current event returns false, the ping sequence is interrupted.
+    return true;
+  });
+
+  
+
   delay_text_movement_millis_last = millis();
+  delay_wifi_connection_first_millis_last = delay_text_movement_millis_last;
 }
 
 void loop()
@@ -348,11 +487,43 @@ void loop()
 
   if(millis() - delay_text_movement_millis_last > delay_text_movement)
   {
+    static uint32_t offsetX = 0;
     yield();
     PRINT3(__func__,":", __LINE__);
     handle_text_movement();
     PRINT(__func__, __LINE__);
     yield();
     delay_text_movement_millis_last = millis();
+    ++offsetX;
   }
+  if(millis() - delay_wifi_connection_first_millis_last > 10000)
+  {
+    PRINT3(__func__,":", __LINE__);
+    handle_wifi_connection_first_check();
+    if(WiFi.status() == WL_CONNECTED)
+    {
+      if (!client.connected())
+      {
+        if(pinger.Ping(mqtt_server) == true)
+        {
+          ;
+        }
+        else
+        {
+          PRINT("Error during ping command.", "");
+        }
+      }
+    }
+    PRINT3(__func__,":", __LINE__);
+    delay_wifi_connection_first_millis_last = millis();
+  }
+
+  if (client.connected())
+  {
+    client.loop();
+  }
+}
+
+void yield() {
+  // ваш код
 }
