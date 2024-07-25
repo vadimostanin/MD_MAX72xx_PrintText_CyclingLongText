@@ -40,7 +40,8 @@ Pinger pinger;
 // need to be adapted
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_REAL_DEVICES (4)
-#define MAX_DEVICES (MAX_REAL_DEVICES+67)
+#define MAX_VIRTUAL_DEVICES (68)
+#define MAX_DEVICES (MAX_REAL_DEVICES + MAX_VIRTUAL_DEVICES)
 
 #define CLK_PIN   SCK  // or SCK
 #define DATA_PIN  MOSI  // or MOSI
@@ -55,39 +56,44 @@ MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 #define CHAR_SPACING  1 // pixels between characters
 
 // Global message buffers shared by Serial and Scrolling functions
-#define BUF_SIZE  (2000)
+#define BUF_SIZE  (1000)
 #define _(x) ((uint16_t)x)
 // uint16_t message[BUF_SIZE] = {(uint16_t)'H',(uint16_t)'e', (uint16_t)'l', (uint16_t)'l', (uint16_t)'o', (uint16_t)'!', 0};//
-uint16_t message[BUF_SIZE] = {
-  (uint16_t)'А',(uint16_t)'A',
-  (uint16_t)'В',(uint16_t)'B',
-  (uint16_t)'Е',(uint16_t)'E',
-  (uint16_t)'И',(uint16_t)'N',
-  (uint16_t)'К',(uint16_t)'K',
-  (uint16_t)'М',(uint16_t)'M',
-  (uint16_t)'Н',(uint16_t)'H',
-  (uint16_t)'О',(uint16_t)'O',
-  (uint16_t)'Р',(uint16_t)'P',
-  (uint16_t)'С',(uint16_t)'C',
-  (uint16_t)'Т',(uint16_t)'T',
-  (uint16_t)'Х',(uint16_t)'X',
-  (uint16_t)'Я',(uint16_t)'R',
-  0};//
+// uint16_t message[BUF_SIZE] = {(uint16_t)'А',(uint16_t)'Б', (uint16_t)'В', (uint16_t)'Г', (uint16_t)'Д', (uint16_t)'Е', 0};//
+// uint16_t message[BUF_SIZE] = {
+//   (uint16_t)'А',(uint16_t)'A',
+//   (uint16_t)'В',(uint16_t)'B',
+//   (uint16_t)'Е',(uint16_t)'E',
+//   (uint16_t)'И',(uint16_t)'N',
+//   (uint16_t)'К',(uint16_t)'K',
+//   (uint16_t)'М',(uint16_t)'M',
+//   (uint16_t)'Н',(uint16_t)'H',
+//   (uint16_t)'О',(uint16_t)'O',
+//   (uint16_t)'Р',(uint16_t)'P',
+//   (uint16_t)'С',(uint16_t)'C',
+//   (uint16_t)'Т',(uint16_t)'T',
+//   (uint16_t)'Х',(uint16_t)'X',
+//   (uint16_t)'Я',(uint16_t)'R',
+//   0};//
 // uint16_t message[BUF_SIZE] = {
 // _('М'), _('А'), _('М'), _('О'), _('-'), _('І'), _('Р'), _('А'), _(','), _(' '), 
 // _('Т'), _('А'), _('Т'), _('О'), _('-'), _('В'), _('А'), _('Д'), _('И'), _('М'), _(','), _(' '), 
 // _('Є'), _('Г'), _('О'), _('Р'), _('-'), _('С'), _('О'), _('Н'), _('І'), _('К'), _(','), _(' '), 
 // _('С'), _('У'), _('П'), _('Е'), _('Р'), _('-'), _('С'), _('О'), _('Ф'), _('І'), _('Я'), 0};//
 //uint16_t message[BUF_SIZE] = {0};//МАМО-ІРА, ТАТО-ВАДИМ, ЄГОР-СОНІК, СУПЕР-СОФІЯ
-// uint16_t message[BUF_SIZE] = {
-// _('М'), _('А'), _('М'), _('О'), _('-'), _('І'), _('Р'), _('А'), _(' '),
-// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _('А'), _(','),
-// _('Т'), _('А'), _('Т'), _('О'), _('-'), _('В'), _('А'), _('Д'), _('И'), _('М'), _(' '), 
-// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _(','),
-// _('Є'), _('Г'), _('О'), _('Р'), _('-'), _('С'), _('О'), _('Н'), _('І'), _('К'), _(' '),
-// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _(','),
-// _('С'), _('У'), _('П'), _('Е'), _('Р'), _('-'), _('С'), _('О'), _('Ф'), _('І'), _('Я'), _(' '),
-// _('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _('А'), 0};//
+
+uint16_t message[BUF_SIZE] = {
+_('М'), _('А'), _('М'), _('О'), _('-'), _('І'), _('Р'), _('А'), _(' '),
+_('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _('А'), _(','), _(' '), 
+_('Т'), _('А'), _('Т'), _('О'), _('-'), _('В'), _('А'), _('Д'), _('И'), _('М'), _(' '), 
+_('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _(','), _(' '),
+_('Є'), _('Г'), _('О'), _('Р'), _('-'), _('С'), _('О'), _('Н'), _('І'), _('К'), _(' '),
+_('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _(','), _(' '),
+_('С'), _('У'), _('П'), _('Е'), _('Р'), _('-'), _('С'), _('О'), _('Ф'), _('І'), _('Я'), _(' '),
+_('О'), _('С'), _('Т'), _('А'), _('Н'), _('І'), _('Н'), _('А'), _(','), _(' '),
+_('К'), _('И'), _('Ї'), _('В'), _(','), _('В'), _('У'), _('Л'), _('И'), _('Ц'), _('Я'), _(' '), 
+_('Д'), _('Е'), _('М'), _('І'), _('Ї'), _('В'), _('С'), _('Ь'), _('К'), _('А'), _(' '), _('1'), _('6'), 0};
+
 // МАМО-ІРА ОСТАНІНА, ТАТО-ВАДИМ ОСТАНІН, ЄГОР-СОНІК ОСТАНІН, СУПЕР-СОФІЯ ОСТАНІНА
 // МАМО-ІРА ОСТАНІНА, ТАТО-ВАДИМ ОСТАНІН, ЄГОР-СОНІК ОСТАНІН, СУПЕР-СОФІЯ ОСТАНІНА, КИЇВ, ВУЛИЦЯ ДЕМІЇВСЬКА 16
 bool newMessageAvailable = true;
@@ -211,7 +217,7 @@ bool getUkranianChar(uint16_t ch, uint8_t chars[COL_SIZE], uint8_t *len)
 
 void readSerial(bool &textChanged, uint16_t &newMessageSize)
 {
-  static uint8_t	putIndex = 0;
+  uint16_t	putIndex = 0;
   textChanged = false;
 
   if (Serial.available())
@@ -223,12 +229,15 @@ void readSerial(bool &textChanged, uint16_t &newMessageSize)
   {
     uint8_t serial_read = (uint8_t)Serial.read();
     message[putIndex] = serial_read;
-    if(message[putIndex] == 208)
+    PRINT("serial_read=", serial_read);
+    if(serial_read == 208)
     {
       message[putIndex] <<= 8;
       while (!Serial.available());
       serial_read = (uint8_t)Serial.read();
+      PRINT("serial_read=", serial_read);
       message[putIndex] |= serial_read;
+      PRINT("message[putIndex]=", message[putIndex]);
       ++putIndex;
 
       newMessageSize = putIndex;
@@ -258,25 +267,31 @@ void eeprom_message_read()
 {
   unsigned char eeprom_value = 0;
   uint16_t message_bytes_size = 0;
+  constexpr unsigned int epprom_data_offset = 4;
 
-  EEPROM.begin(2);
+  EEPROM.begin(epprom_data_offset);
 
-  EEPROM.get(0, eeprom_value);
+  if('A' != EEPROM[0] || 'B' != EEPROM[1])
+  {
+    newMessageAvailable = true;
+    return;
+  }
+  eeprom_value = EEPROM[2];
   message_bytes_size = eeprom_value << 8;
-  EEPROM.get(1, eeprom_value);
+  eeprom_value = EEPROM[3];
   message_bytes_size |= eeprom_value;
   if(0xffff != message_bytes_size)
   {
     memset(message, 0, sizeof(message));
 
-    EEPROM.begin(2 + message_bytes_size);
+    EEPROM.begin(epprom_data_offset + message_bytes_size);
 
     const uint16_t message_utf8_size = message_bytes_size / sizeof(message[0]);
     for(int message_i = 0 ; message_i < message_utf8_size ; ++message_i)
     {
-      EEPROM.get(message_i*2 + 2, eeprom_value);
+      eeprom_value = EEPROM[message_i*2 + epprom_data_offset];
       message[message_i] = eeprom_value << 8;
-      EEPROM.get(message_i*2 + 2 + 1, eeprom_value);
+      eeprom_value = EEPROM[message_i*2 + epprom_data_offset + 1];
       message[message_i] |= eeprom_value;
     }
     newMessageAvailable = true;
@@ -288,15 +303,18 @@ void eeprom_message_write(const uint16_t *str, uint16_t newMessageSize)
   const unsigned short message_utf8_size = newMessageSize;
   const unsigned short message_bytes_size = message_utf8_size * sizeof(message[0]);
   unsigned char eeprom_value = 0; 
-  EEPROM.begin(2 + message_bytes_size);
-  EEPROM.put(0, message_bytes_size>>8);
-  EEPROM.put(1, message_bytes_size);
+  constexpr unsigned int epprom_data_offset = 4;
+  EEPROM.begin(4 + message_bytes_size);
+  EEPROM[0] = 'A';//magic numbers
+  EEPROM[1] = 'B';
+  EEPROM[2] = message_bytes_size >> 8;
+  EEPROM[3] = message_bytes_size;
   for(int message_i = 0 ; message_i < message_utf8_size ; ++message_i)
   {
     eeprom_value = message[message_i] >> 8;
-    EEPROM.put(message_i*2 + 2, eeprom_value);
+    EEPROM[message_i*2 + epprom_data_offset] = eeprom_value;
     eeprom_value = message[message_i];
-    EEPROM.put(message_i*2 + 2 + 1, eeprom_value);
+    EEPROM[message_i*2 + epprom_data_offset + 1] = eeprom_value;
   }
   EEPROM.commit();
 }
@@ -305,9 +323,9 @@ void printText(uint8_t modStart, uint8_t modEnd, uint16_t *pMsg)
 // Print the text string to the LED matrix modules specified.
 // Message area is padded with blank columns after printing.
 {
-  uint8_t   state = 0;
-  uint8_t   curLen = 0;
-  uint8_t  showLen = 0;
+  uint16_t   state = 0;
+  uint16_t   curLen = 0;
+  uint8_t   showLen = 0;
   uint8_t   cBuf[COL_SIZE] = {0};
   int16_t   col = ((modEnd + 1) * COL_SIZE) - 1;
 
@@ -317,53 +335,71 @@ void printText(uint8_t modStart, uint8_t modEnd, uint16_t *pMsg)
     switch(state)
     {
       case 0: // Load the next character from the font table
+      // PRINT3(__func__,":", __LINE__);
         // if we reached end of message, reset the message pointer
+        PRINT("*pMsg=", *pMsg);
         if (*pMsg == '\0')
         {
+          // PRINT3(__func__,":", __LINE__);
           showLen = col - (modEnd * COL_SIZE);  // padding characters
           state = 2;
+          return;
           break;
         }
-
+        // PRINT3(__func__,":", __LINE__);
         if(!getUkranianChar(*pMsg, cBuf, &showLen))
         {
           // retrieve the next character form the font file
           showLen = mx.getChar((char)*pMsg, sizeof(cBuf)/sizeof(cBuf[0]), cBuf);
+          // PRINT("showLen=", showLen);
         }
+        // PRINT("showLen=", showLen);
+        
         pMsg++;
-        PRINT("showLen=", showLen);
-        for(int char_i = 0 ; char_i < sizeof(cBuf) ; ++char_i)
-        {
-          PRINT(cBuf[char_i], ", ");
-        }
+        // PRINT("*pMsg=", *pMsg);
+        // for(int char_i = 0 ; char_i < sizeof(cBuf) ; ++char_i)
+        // {
+        //   PRINT(cBuf[char_i], ", ");
+        // }
         curLen = 0;
         state++;
         // !! deliberately fall through to next state to start displaying
 
       case 1: // display the next part of the character
         mx.setColumn(col--, cBuf[curLen++]);
+        // PRINT("curLen=", curLen);
 
         // done with font character, now display the space between chars
         if (curLen == showLen)
         {
           showLen = CHAR_SPACING;
+          // PRINT("showLen=", showLen);
+          // PRINT3(__func__,":", __LINE__);
           state = 2;
         }
         break;
 
       case 2: // initialize state for displaying empty columns
+      // PRINT3(__func__,":", __LINE__);
         curLen = 0;
         state++;
         // fall through
 
       case 3:	// display inter-character spacing or end of message padding (blank columns)
+      // PRINT3(__func__,":", __LINE__);
         mx.setColumn(col--, 0);
         curLen++;
+        // PRINT("curLen=", curLen);
+        // PRINT("showLen=", showLen);
         if (curLen == showLen)
+        {
+          // PRINT3(__func__,":", __LINE__);
           state = 0;
+        }
         break;
 
       default:
+      // PRINT3(__func__,":", __LINE__);
         col = -1;   // this definitely ends the do loop
     }
   } while (col >= (modStart * COL_SIZE));
@@ -371,14 +407,10 @@ void printText(uint8_t modStart, uint8_t modEnd, uint16_t *pMsg)
 
 void handle_text_movement()
 {
-  PRINT3(__func__,":", __LINE__);
   // Shift over and insert the new column
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-  PRINT3(__func__,":", __LINE__);
   mx.transform(MD_MAX72XX::TSR);
-  PRINT3(__func__,":", __LINE__);
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-  PRINT3(__func__,":", __LINE__);
   yield();
 }
 
@@ -386,8 +418,9 @@ void handle_add_new_text()
 {
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::WRAPAROUND, MD_MAX72XX::OFF);
-  
+  PRINT3(__func__,":", __LINE__);
   printText(0, MAX_DEVICES-1, message);
+  PRINT3(__func__,":", __LINE__);
   yield();
   mx.control(0, MAX_DEVICES-1, MD_MAX72XX::WRAPAROUND, MD_MAX72XX::ON);
   yield();
@@ -401,7 +434,6 @@ void handle_add_new_text()
   }
   mx.transform(MD_MAX72XX::TFUD);
   mx.transform(MD_MAX72XX::TFLR);
-  yield();
   mx.control(0, MAX_DEVICES, MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
 }
 
@@ -458,8 +490,6 @@ void setup()
     return true;
   });
 
-  
-
   delay_text_movement_millis_last = millis();
   delay_wifi_connection_first_millis_last = delay_text_movement_millis_last;
 }
@@ -489,13 +519,12 @@ void loop()
   {
     static uint32_t offsetX = 0;
     yield();
-    PRINT3(__func__,":", __LINE__);
     handle_text_movement();
-    PRINT(__func__, __LINE__);
     yield();
     delay_text_movement_millis_last = millis();
     ++offsetX;
   }
+
   if(millis() - delay_wifi_connection_first_millis_last > 10000)
   {
     PRINT3(__func__,":", __LINE__);
@@ -504,11 +533,7 @@ void loop()
     {
       if (!client.connected())
       {
-        if(pinger.Ping(mqtt_server) == true)
-        {
-          ;
-        }
-        else
+        if(pinger.Ping(mqtt_server) == false)
         {
           PRINT("Error during ping command.", "");
         }
